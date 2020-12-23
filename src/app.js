@@ -21,6 +21,7 @@ app.use(morgan(morganOption, {
 }))
 app.use(cors())
 app.use(helmet())
+app.use(express.json())
 
 app.use(express.static('public'))
 
@@ -31,13 +32,39 @@ const serializeTodo = todo => ({
 })
 
 app
-  .route('/v1/todos')
-  .get(/* Your code here */)
-  .post(/* Your code here */)
+  .get('/v1/todos',
+    (req, res, next) => {
+    TodoService.getTodos(
+      req.app.get('db')
+    )
+    .then(todo => {
+      if (!todo) {
+        return res.status(404).json({
+          error: { message: `Todo doesn't exist` }
+        })
+      }
+      res.status(200).json(todo)
+      next()
+    })
+    .catch(next)
+  })
+  .post('/v1/todos',
+    (req, res, next) => {
+    console.log(req.body, 'req body test')
+    TodoService.insertTodo(
+      req.app.get('db'),
+      req.body
+    )
+    .then(todo => {
+      res.status(200).json(todo)
+      next()
+    })
+  });
 
 app
   .route('/v1/todos/:todo_id')
   .all((req, res, next) => {
+    console.log(req.params, 'req params check')
     if(isNaN(parseInt(req.params.todo_id))) {
       return res.status(404).json({
         error: { message: `Invalid id` }
